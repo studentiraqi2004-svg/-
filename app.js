@@ -1,5 +1,3 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-
 const resultEl=document.querySelector('#result');
 const expressionEl=document.querySelector('#expression');
 const keypad=document.querySelector('#keypad');
@@ -87,114 +85,107 @@ historyEl.addEventListener('click',e=>{
 document.querySelector('#clearHistory').onclick=()=>{history=[];renderHistory()};
 
 /* ===== REAL-TIME 3D ENGINE ===== */
-const sceneEl=document.querySelector('#scene');
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(42,1,.1,100);
-camera.position.set(0,0,7.2);
+async function start3D(){
+  const sceneEl=document.querySelector('#scene');
+  if(!sceneEl) return;
+  try{
+    // Dynamic import prevents a CDN/WebGL problem from breaking the calculator.
+    const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js');
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(38,1,.1,100);
+    camera.position.set(0,0,7.5);
 
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setClearColor(0x000000,0);
-sceneEl.appendChild(renderer.domElement);
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setClearColor(0x000000,0);
+    sceneEl.replaceChildren(renderer.domElement);
 
-const world=new THREE.Group();
-scene.add(world);
+    const world=new THREE.Group();
+    scene.add(world);
 
-const keyLight=new THREE.PointLight(0xffb000,35,18);
-keyLight.position.set(3.5,2.8,4.5);
-scene.add(keyLight);
-const rimLight=new THREE.PointLight(0xff4d00,24,15);
-rimLight.position.set(-4,-2,3);
-scene.add(rimLight);
-scene.add(new THREE.AmbientLight(0xffffff,.65));
+    scene.add(new THREE.AmbientLight(0xffffff,1.1));
+    const key=new THREE.PointLight(0xffb000,45,20);
+    key.position.set(3,3,5); scene.add(key);
+    const rim=new THREE.PointLight(0xff4b00,30,18);
+    rim.position.set(-4,-2,3); scene.add(rim);
 
-/* central faceted crystal */
-const crystal=new THREE.Mesh(
-  new THREE.IcosahedronGeometry(1.42,2),
-  new THREE.MeshPhysicalMaterial({
-    color:0xff9d16,metalness:.72,roughness:.16,
-    emissive:0x5a2100,emissiveIntensity:.8,
-    clearcoat:1,clearcoatRoughness:.15
-  })
-);
-world.add(crystal);
+    const crystal=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.45,2),
+      new THREE.MeshStandardMaterial({
+        color:0xff9d16,metalness:.75,roughness:.18,
+        emissive:0x7a2600,emissiveIntensity:1.1
+      })
+    );
+    world.add(crystal);
 
-/* glowing wire shell */
-const shell=new THREE.Mesh(
-  new THREE.IcosahedronGeometry(1.62,2),
-  new THREE.MeshBasicMaterial({color:0xffc04a,wireframe:true,transparent:true,opacity:.22})
-);
-world.add(shell);
+    const shell=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.72,2),
+      new THREE.MeshBasicMaterial({color:0xffc04a,wireframe:true,transparent:true,opacity:.42})
+    );
+    world.add(shell);
 
-/* orbital rings */
-const rings=[];
-for(let i=0;i<3;i++){
-  const ring=new THREE.Mesh(
-    new THREE.TorusGeometry(1.85+i*.22,.014,12,160),
-    new THREE.MeshBasicMaterial({color:i===1?0xff6b00:0xffb000,transparent:true,opacity:.55})
-  );
-  ring.rotation.set(.65+i*.48,.2+i*.55,i*.9);
-  world.add(ring);rings.push(ring);
+    const rings=[];
+    for(let i=0;i<3;i++){
+      const ring=new THREE.Mesh(
+        new THREE.TorusGeometry(1.95+i*.24,.018,12,180),
+        new THREE.MeshBasicMaterial({color:i===1?0xff6500:0xffbd32,transparent:true,opacity:.8})
+      );
+      ring.rotation.set(.7+i*.45,.25+i*.5,i*.8);
+      world.add(ring); rings.push(ring);
+    }
+
+    const count=420;
+    const pos=new Float32Array(count*3);
+    for(let i=0;i<count;i++){
+      const radius=2.15+Math.random()*3.0, a=Math.random()*Math.PI*2;
+      pos[i*3]=Math.cos(a)*radius;
+      pos[i*3+1]=Math.sin(a)*radius;
+      pos[i*3+2]=(Math.random()-.5)*5;
+    }
+    const pg=new THREE.BufferGeometry();
+    pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const particles=new THREE.Points(pg,new THREE.PointsMaterial({
+      color:0xffb52e,size:.035,transparent:true,opacity:.9,sizeAttenuation:true
+    }));
+    scene.add(particles);
+
+    let mx=0,my=0,pulse=0;
+    sceneEl.addEventListener('pointermove',e=>{
+      const r=sceneEl.getBoundingClientRect();
+      mx=((e.clientX-r.left)/r.width-.5)*2;
+      my=((e.clientY-r.top)/r.height-.5)*2;
+    });
+    window.addEventListener('calc-pulse',()=>pulse=1);
+
+    function resize(){
+      const w=Math.max(1,sceneEl.clientWidth),h=Math.max(1,sceneEl.clientHeight);
+      renderer.setSize(w,h,false);
+      camera.aspect=w/h; camera.updateProjectionMatrix();
+    }
+    const ro=new ResizeObserver(resize); ro.observe(sceneEl); resize();
+
+    const clock=new THREE.Clock();
+    function animate(){
+      requestAnimationFrame(animate);
+      const t=clock.getElapsedTime();
+      crystal.rotation.x=t*.3+my*.18;
+      crystal.rotation.y=t*.48+mx*.22;
+      shell.rotation.x=-t*.2; shell.rotation.y=-t*.28;
+      rings.forEach((r,i)=>{r.rotation.z+=.003*(i+1); r.rotation.x+=.001*(i+1)});
+      particles.rotation.y=t*.04;
+      world.position.x+=(mx*.25-world.position.x)*.05;
+      world.position.y+=(-my*.2-world.position.y)*.05;
+      const s=1+pulse*.2;
+      world.scale.x+=(s-world.scale.x)*.14;
+      world.scale.y+=(s-world.scale.y)*.14;
+      world.scale.z+=(s-world.scale.z)*.14;
+      pulse*=.9;
+      renderer.render(scene,camera);
+    }
+    animate();
+  }catch(err){
+    // Guaranteed visual fallback if WebGL/CDN is unavailable.
+    sceneEl.innerHTML='<div class="orb-fallback"><div class="orb-core"></div><div class="orb-ring r1"></div><div class="orb-ring r2"></div><div class="orb-ring r3"></div></div>';
+  }
 }
-
-/* floating particles */
-const particleCount=260;
-const positions=new Float32Array(particleCount*3);
-for(let i=0;i<particleCount;i++){
-  const radius=2.2+Math.random()*2.8;
-  const a=Math.random()*Math.PI*2;
-  const z=(Math.random()-.5)*4.5;
-  positions[i*3]=Math.cos(a)*radius;
-  positions[i*3+1]=Math.sin(a)*radius;
-  positions[i*3+2]=z;
-}
-const particleGeo=new THREE.BufferGeometry();
-particleGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-const particles=new THREE.Points(
-  particleGeo,
-  new THREE.PointsMaterial({color:0xffb52e,size:.028,transparent:true,opacity:.7,sizeAttenuation:true})
-);
-scene.add(particles);
-
-let targetPulse=0;
-let mouseX=0,mouseY=0;
-sceneEl.addEventListener('pointermove',e=>{
-  const r=sceneEl.getBoundingClientRect();
-  mouseX=((e.clientX-r.left)/r.width-.5)*2;
-  mouseY=((e.clientY-r.top)/r.height-.5)*2;
-});
-window.addEventListener('calc-pulse',()=>{targetPulse=1});
-
-function resize(){
-  const w=Math.max(1,sceneEl.clientWidth),h=Math.max(1,sceneEl.clientHeight);
-  renderer.setSize(w,h,false);
-  camera.aspect=w/h;
-  camera.updateProjectionMatrix();
-}
-new ResizeObserver(resize).observe(sceneEl);
-resize();
-
-const clock=new THREE.Clock();
-function animate(){
-  requestAnimationFrame(animate);
-  const t=clock.getElapsedTime();
-  crystal.rotation.x=t*.28+mouseY*.16;
-  crystal.rotation.y=t*.42+mouseX*.2;
-  shell.rotation.x=-t*.18;
-  shell.rotation.y=-t*.25;
-  rings.forEach((r,i)=>{
-    r.rotation.z+=.0025*(i+1);
-    r.rotation.x+=.0008*(i+1);
-  });
-  particles.rotation.y=t*.035;
-  particles.rotation.x=Math.sin(t*.12)*.08;
-  world.position.x+=(mouseX*.22-world.position.x)*.045;
-  world.position.y+=(-mouseY*.18-world.position.y)*.045;
-  const pulse=1+targetPulse*.16;
-  const s=world.scale.x+(pulse-world.scale.x)*.12;
-  world.scale.setScalar(s);
-  targetPulse*=.91;
-  renderer.render(scene,camera);
-}
-animate();
-renderHistory();render();
+start3D();
