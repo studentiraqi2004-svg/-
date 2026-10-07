@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0b0d" />
+  <title>ORBIT — Premium Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-dot"></span><span>ORBIT</span></div>
+      <div class="topbar-label">PRECISION / 01</div>
+    </header>
+
+    <section class="hero">
+      <div class="calculator-card">
+        <div class="display">
+          <div class="expression" id="expression">Ready</div>
+          <div class="result" id="result">0</div>
+        </div>
+        <div class="keypad" id="keypad">
+          <button class="key utility" data-action="clear">AC</button>
+          <button class="key utility" data-action="backspace">⌫</button>
+          <button class="key utility" data-action="percent">%</button>
+          <button class="key operator" data-value="/">÷</button>
+
+          <button class="key" data-value="7">7</button>
+          <button class="key" data-value="8">8</button>
+          <button class="key" data-value="9">9</button>
+          <button class="key operator" data-value="*">×</button>
+
+          <button class="key" data-value="4">4</button>
+          <button class="key" data-value="5">5</button>
+          <button class="key" data-value="6">6</button>
+          <button class="key operator" data-value="-">−</button>
+
+          <button class="key" data-value="1">1</button>
+          <button class="key" data-value="2">2</button>
+          <button class="key" data-value="3">3</button>
+          <button class="key operator" data-value="+">+</button>
+
+          <button class="key zero" data-value="0">0</button>
+          <button class="key" data-value=".">.</button>
+          <button class="key equals" data-action="equals">=</button>
+        </div>
+      </div>
+
+      <div class="visual-panel">
+        <div class="visual-copy">
+          <span class="eyebrow">DYNAMIC ENGINE</span>
+          <h1>Calculate<br><em>in motion.</em></h1>
+          <p>A minimal precision calculator wrapped in a living 3D interface.</p>
+        </div>
+        <div id="scene" aria-hidden="true"></div>
+        <div class="orbit-stats">
+          <span><b id="opCount">00</b><small>OPERATIONS</small></span>
+          <span><b>3D</b><small>ENGINE</small></span>
+          <span><b id="memoryValue">0</b><small>MEMORY</small></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="history-panel">
+      <div class="section-title"><span>History</span><button id="clearHistory">Clear</button></div>
+      <div id="history" class="history-list"><div class="empty">Your calculations will appear here.</div></div>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
